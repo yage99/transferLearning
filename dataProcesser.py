@@ -2,7 +2,7 @@ import scipy.io
 import numpy
 
 def loadExpression(data):
-    mat = scipy.io.loadmat('data/express/matlab.mat');
+    mat = scipy.io.loadmat('../data/express/matlab.mat');
     data['express'] = mat['exp_matrix'];
     data['label'] = numpy.logical_or(mat['S1'][:,3] == 'Stable Disease', mat['S1'][:,3] == 'Clinical Progressive Disease');
     data['uid'] = mat['S1'][:,1];
@@ -11,7 +11,7 @@ def loadExpression(data):
 
 
 def loadCNV(data):
-    mat = scipy.io.loadmat('data/CNV/CNV.mat');
+    mat = scipy.io.loadmat('../data/CNV/CNV.mat');
 
     patients = mat['U'][:,1];
     cnv = mat['M'];
