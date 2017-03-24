@@ -35,7 +35,7 @@ def trAdaboost(Td, Ts, labeld, labels, S, N):
     base = numpy.prod(beta_t[1, math.ceil(N / 2) : N] ** -0.5)
     for i in range(S.shape[0]):
         # production of this powers
-        posibity = numpy.prod(beta_t[1, math.ceil(N / 2) : N] ** -ht[i, math.ceil(N / 2) : N]))
+        posibity = numpy.prod(beta_t[1, math.ceil(N / 2) : N] ** -ht[i, math.ceil(N / 2) : N])
 
         if(posibity > base):
             hf[1, i] = 1
