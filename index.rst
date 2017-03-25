@@ -11,21 +11,15 @@ Welcome to transfer learning by yage's documentation!
    :caption: Contents:
 
 :mod:`dataProcessor`
----------------------------------
+-----------------------------------------------------
 .. automodule:: dataProcessor
    :members:
    :undoc-members:
 
 :mod:`trAdaboost`
-----------------
+-----------------------------------------------------
 
 .. automodule:: trAdaboost
    :members:
    :undoc-members:
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
