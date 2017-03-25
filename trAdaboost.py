@@ -1,8 +1,13 @@
-import numpy
-import math
-from sklearn import svm
+"""This module provides functions for trAdaboost.
+"""
 
 def trAdaboost(Td, Ts, labeld, labels, S, N):
+    """This is a function provides trAdaboost algorithm.
+    """
+    import numpy
+    import math
+    from sklearn import svm
+
     # get the length of all labeled data
 
     t = Td.shape[0] + Ts.shape[0]
