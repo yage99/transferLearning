@@ -9,24 +9,34 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn import metrics
 
 
-def gridSearchCV(X, y, sample_weight, param_grid, cv):
+def gridSearchCV(X, y, param_grid, cv, sample_weight=None):
     """Search the best gamma and C for the model"""
+
     best_auc = 0
     best_clf = svm.SVC()
+
     for gamma in param_grid['gamma']:
         for C in param_grid['C']:
-            clf = svm.SVC(gamma=gamma, C=C)
+            clf = svm.SVC(gamma=gamma, C=C, probability=True)
             predict = numpy.zeros(y.shape)
             for train_indc, test_indc in cv.split(X, y):
-                clf.fit(X[train_indc], y[train_indc],
-                        sample_weight=sample_weight[train_indc])
-                predict[test_indc] = clf.predict(X[test_indc])
+                if sample_weight is None:
+                    clf.fit(X[train_indc], y[train_indc])
+                else:
+                    clf.fit(X[train_indc], y[train_indc],
+                            sample_weight=sample_weight[train_indc])
+                predict[test_indc] = clf.predict_proba(X[test_indc])
 
             auc = metrics.roc_auc_score(y, predict)
+            # print predict
+            print "searching best auc: %f; gamma: %f, C: %f" % (auc, gamma, C)
             if auc > best_auc:
                 best_auc = auc
                 best_clf = clf
-    print("The best auc is %f" % best_auc)
+
+    print("The best auc is %f, best gamma: %f, best C: %f"
+          % (best_auc, best_clf.get_params()['gamma'],
+             best_clf.get_params()['C']))
     return best_clf
 
 
@@ -64,8 +74,8 @@ def trAdaboost(Td, Ts, labeld, labels, S, N):
                          / float(numpy.sum(ws) + numpy.sum(wd)))
         best_clf_model = gridSearchCV(numpy.vstack((Td, Ts)),
                                       numpy.hstack((labeld, labels)),
-                                      sample_weight=sample_weight,
-                                      param_grid=param_grid, cv=cv)
+                                      param_grid=param_grid, cv=cv,
+                                      sample_weight=sample_weight)
 
         hs = best_clf_model.predict(Ts)
         hd = best_clf_model.predict(Td)
