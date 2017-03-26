@@ -3,18 +3,22 @@
 
 import scipy.io
 import numpy
+from trAdaboost import trAdaboost
+from sklearn.model_selection import KFold
+from sklearn import preprocessing
+from sklearn import metrics
 
 
 def loadExpression(data):
     """Loads data from specified matlab mat file whose path is
-       set to `data/express/matlab.mat`.
+       set to `../data/express/matlab.mat`.
 
     Paramaters:
     ------------------------------------------------
     data: dict
         data will be filled with loaded matrices.
     """
-    mat = scipy.io.loadmat('data/express/matlab.mat')
+    mat = scipy.io.loadmat('../data/express/matlab.mat')
     data['express'] = mat['exp_matrix']
     data['label'] = numpy.logical_or(
         mat['S1'][:, 3] == 'Stable Disease',
@@ -25,7 +29,7 @@ def loadExpression(data):
 
 
 def loadCNV(data):
-    """Load CNV data from mat file. Path is set to `data/CNV/CNV.mat`.
+    """Load CNV data from mat file. Path is set to `../data/CNV/CNV.mat`.
 
     Paramaters:
     ------------------------------------------------
@@ -33,7 +37,7 @@ def loadCNV(data):
         This paramater should be initialized by :func:`loadExpression`
         first, for the patients id is loaded by :func:`loadExpression`.
     """
-    mat = scipy.io.loadmat('data/CNV/CNV.mat')
+    mat = scipy.io.loadmat('../data/CNV/CNV.mat')
 
     patients = mat['U'][:, 1]
     cnv = mat['M']
@@ -59,12 +63,61 @@ def loadCNV(data):
     data['cnv'] = cnvdata
 
 
+def data_filter(data, drug_name):
+    """Filter instances using `drug_name` from `data`.
+    Returned a new dict contains all filtered data.
+    """
+    filter = data['drug'] == drug_name
+
+    filtered_data = {}
+    filtered_data['uid'] = data['uid'][filter]
+    filtered_data['express'] = data['express'][filter, :]
+    filtered_data['label'] = data['label'][filter]
+    filtered_data['disease'] = data['disease'][filter]
+
+    return filtered_data
+    
+
 def test():
     data = {}
     loadExpression(data)
-    loadCNV(data)
 
-    print data
+    # normalize gene express based on all data
+    expression = data['express']
+    expression = expression[:, expression.std(0) != 0]
+    expression = (expression -
+                  numpy.resize(expression.mean(0),
+                               expression.shape)) / numpy.resize(expression.std(0), expression.shape)
+    expression[numpy.logical_or(expression > 2, expression < -2)] = 0
+    data['express'] = preprocessing.MinMaxScaler().fit_transform(expression)
+
+    # filter two drugs as source and target data
+    source_data = data_filter(data, 'Cisplatin')
+    target_data = data_filter(data, 'Carboplatin')
+
+    source_express = source_data['express']
+    target_express = target_data['express']
+
+    # do feature selction by mrmr
+    # numpy.savetxt("temp.csv", numpy.ceil(source_express*100), fmt="%.3f", delimiter=',')
+    # load features from data
+    feature_indc = numpy.loadtxt('features_mrmr_200.txt')[:,1].astype('int')
+    source_express = source_express[:, feature_indc]
+    target_express = target_express[:, feature_indc]
+
+    source_label = numpy.zeros(source_data['label'].shape)
+    source_label[source_data['label']] = 1
+    target_label = numpy.zeros(target_data['label'].shape)
+    target_label[target_data['label']] = 1
+    
+    kf = KFold(n_splits = 10)
+    predict = numpy.zeros(target_label.shape)
+    for train, test in kf.split(target_label):
+        predict[test] = trAdaboost(source_express, target_express[train],
+                             source_label, target_label[train],
+                             target_express[test], 10)
+        
+    print "The overall trAdaboost AUC is %f" % metrics.roc_auc_score(target_label, predict)
 
 
 if __name__ == "__main__":
