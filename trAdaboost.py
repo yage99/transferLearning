@@ -43,12 +43,19 @@ def gridSearchCV(X, y, param_grid, cv, sample_weight=None):
 def trAdaboost(Td, Ts, labeld, labels, S, N):
     """This is a function provides trAdaboost algorithm.
     Paramaters:
-        Td: numpy - source training data
-        Ts: numpy - target training data
-        labeld: vector - source label
-        labels: vector - target label
-        S: numpy - testing data
-        N: int - iterater times
+
+    Td: numpy
+        source training data
+    Ts: numpy
+        target training data
+    labeld: vector
+        source label
+    labels: vector
+        target label
+    S: numpy
+        testing data
+    N: int
+        iterater times
     """
 
     # get the length of all labeled data

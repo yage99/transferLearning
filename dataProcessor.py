@@ -14,11 +14,10 @@ from sklearn import metrics
 
 
 def loadExpression(data):
-    """Loads data from specified matlab mat file whose path is
-       set to `../data/express/matlab.mat`.
+    """Loads data from specified matlab mat file whose path is set to 
+    `../data/express/matlab.mat`.
 
     Paramaters:
-    ------------------------------------------------
     data: dict
         data will be filled with loaded matrices.
     """
