@@ -72,7 +72,7 @@ def data_filter(data, drug_name, disease_name=None):
     """
     filter = data['drug'] == drug_name
     if disease_name is not None:
-        filter = numpy.logical_and(filter, data['disease'] == diseaes_name)
+        filter = numpy.logical_and(filter, data['disease'] == disease_name)
 
     filtered_data = {}
     filtered_data['uid'] = data['uid'][filter]
@@ -146,15 +146,15 @@ def test():
     kf = KFold(n_splits=10)
     predict = numpy.zeros(target_label.shape)
 
-    C_range = 2. ** numpy.arange(-2, 4, 0.5)
-    gamma_range = 2. ** numpy.arange(-2, 4, 0.5)
+    C_range = 2. ** numpy.arange(-5, 15)
+    gamma_range = 2. ** numpy.arange(-20, -5)
     param_grid = dict(gamma=gamma_range, C=C_range)
-    cv = StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
+    # cv = KFold(n_splits=10)
+    # StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
 
     best_clf = gridSearchCV(source_express, source_label,
-                            param_grid=param_grid,
-                            cv=cv)
-    return
+                            param_grid=param_grid)
+    #return
     for train, test in kf.split(target_label):
         print "training one split"
         predict[test] = trAdaboost(source_express, target_express[train],

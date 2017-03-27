@@ -5,15 +5,16 @@
 import numpy
 import math
 from sklearn import svm
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import KFold
 from sklearn import metrics
 
 
-def gridSearchCV(X, y, param_grid, cv, sample_weight=None):
+def gridSearchCV(X, y, param_grid, sample_weight=None):
     """Search the best gamma and C for the model"""
 
     best_auc = 0
     best_clf = svm.SVC()
+    cv = KFold(n_splits=10)
 
     for gamma in param_grid['gamma']:
         for C in param_grid['C']:
@@ -75,13 +76,14 @@ def trAdaboost(Td, Ts, labeld, labels, S, N):
     C_range = numpy.logspace(-2, 10, 13)
     gamma_range = numpy.logspace(-9, 3, 13)
     param_grid = dict(gamma=gamma_range, C=C_range)
-    cv = StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
+
+    # StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
     for i in range(N):
         sample_weight = (numpy.hstack((wd, ws))
                          / float(numpy.sum(ws) + numpy.sum(wd)))
         best_clf_model = gridSearchCV(numpy.vstack((Td, Ts)),
                                       numpy.hstack((labeld, labels)),
-                                      param_grid=param_grid, cv=cv,
+                                      param_grid=param_grid,
                                       sample_weight=sample_weight)
 
         hs = best_clf_model.predict(Ts)
