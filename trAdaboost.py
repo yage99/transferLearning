@@ -7,6 +7,7 @@ import math
 from sklearn import svm
 from sklearn.model_selection import KFold
 from sklearn import metrics
+import os
 
 
 def gridSearchCV(X, y, param_grid, sample_weight=None):
@@ -30,7 +31,9 @@ def gridSearchCV(X, y, param_grid, sample_weight=None):
 
             auc = metrics.roc_auc_score(y, predict)
             # print predict
-            print "searching best auc: %f; gamma: %f, C: %f" % (auc, gamma, C)
+            if os.environ['debug']:
+                print ("searching best auc: %f; gamma: %f, C: %f"
+                       % (auc, gamma, C))
             if auc > best_auc:
                 best_auc = auc
                 best_clf = clf

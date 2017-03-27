@@ -3,6 +3,8 @@
 
 import scipy.io
 import os
+import sys
+from getopt import getopt
 import subprocess
 import numpy
 from trAdaboost import trAdaboost
@@ -92,9 +94,13 @@ def test():
     disease = None
 
     data = {}
+    if os.environ['debug']:
+        print "loading source data"
     loadExpression(data)
 
     # normalize gene express based on all data
+    if os.environ['debug']:
+        print "normalizing data"
     expression = data['express']
     expression = expression[:, expression.std(0) != 0]
     expression = ((expression - numpy.resize(expression.mean(0),
@@ -103,6 +109,9 @@ def test():
     expression[numpy.logical_or(expression > 2, expression < -2)] = 0
     data['express'] = preprocessing.MinMaxScaler().fit_transform(expression)
 
+    if os.environ['debug']:
+        print ("filter drug %s, %s, disease %s"
+               % (source_drug, target_drug, disease))
     # filter two drugs as source and target data
     source_data = data_filter(data, source_drug, disease)
     target_data = data_filter(data, target_drug, disease)
@@ -111,6 +120,8 @@ def test():
     target_express = target_data['express']
 
     # do feature selction by mrmr
+    if os.environ['debug']:
+        print "selecting feature: %d" % feature_num
     feature_file_name = ('~feature_%s_%s_%s_%d.txt'
                          % (source_drug, target_drug, disease, feature_num))
     if(os.path.isfile(feature_file_name)):
@@ -126,6 +137,7 @@ def test():
                                           str(source_express.shape[0] + 10),
                                           "-v",
                                           str(source_express.shape[1] + 10)])
+        print "This will take a while"
         os.remove("~temp.csv")
         # load features from data
         table = numpy.fromstring(output, sep='\t').reshape(feature_num, 4)
@@ -166,4 +178,12 @@ def test():
 
 
 if __name__ == "__main__":
+    opts, args = getopt(sys.argv[1:], "v")
+
+    os.environ['debug'] = ""
+    for opt, arg in opts:
+        if opt == '-v':
+            print "debug model"
+            os.environ['debug'] = "True"
+
     test()
