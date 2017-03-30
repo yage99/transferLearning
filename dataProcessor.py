@@ -24,13 +24,18 @@ def loadExpression(data):
         data will be filled with loaded matrices.
     """
     mat = scipy.io.loadmat('../data/express/matlab.mat')
-    data['express'] = mat['exp_matrix']
+
+    # filter not known label
+    print mat['S1'][:, 3]
+    filter = numpy.logical_not(mat['S1'][:, 3] == '[]')
+    data['express'] = mat['exp_matrix'][filter]
     data['label'] = numpy.logical_or(
         mat['S1'][:, 3] == 'Stable Disease',
-        mat['S1'][:, 3] == 'Clinical Progressive Disease')
-    data['uid'] = mat['S1'][:, 1]
-    data['drug'] = mat['S1'][:, 2]
-    data['disease'] = mat['S1'][:, 0]
+        mat['S1'][:, 3] == 'Clinical Progressive Disease')[filter]
+
+    data['uid'] = mat['S1'][:, 1][filter]
+    data['drug'] = mat['S1'][:, 2][filter]
+    data['disease'] = mat['S1'][:, 0][filter]
 
 
 def loadCNV(data):
@@ -167,13 +172,15 @@ def test():
     best_clf = gridSearchCV(source_express, source_label,
                             param_grid=param_grid)
     #return
+    previous_clf = gridSearchCV(target_express,
+                                target_label, param_grid=param_grid)
     for train, test in kf.split(target_label):
         print "training one split"
         predict[test] = trAdaboost(source_express, target_express[train],
                                    source_label, target_label[train],
-                                   target_express[test], 10)
+                                   target_express[test], 2)
 
-    print ("The overall trAdaboost AUC is %f"
+    print ("The improved trAdaboost AUC is %f"
            % metrics.roc_auc_score(target_label, predict))
 
 

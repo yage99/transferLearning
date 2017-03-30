@@ -44,22 +44,25 @@ def gridSearchCV(X, y, param_grid, sample_weight=None):
     return best_clf
 
 
-def trAdaboost(Td, Ts, labeld, labels, S, N):
+def trAdaboost(Td, Ts, labeld, labels, S, N, preset_model=None):
     """This is a function provides trAdaboost algorithm.
     Paramaters:
 
     Td: numpy
-        source training data
+        Source training data
     Ts: numpy
-        target training data
+        Target training data
     labeld: vector
-        source label
+        Source label
     labels: vector
-        target label
+        Target label
     S: numpy
-        testing data
+        Testing data
     N: int
-        iterater times
+        Iterater times
+    preset_model: SVC classifier
+        Set a preset model for all iteration. If not set, trAdaboost will try to
+        find the best model for each iteration.
     """
 
     # get the length of all labeled data
@@ -82,12 +85,19 @@ def trAdaboost(Td, Ts, labeld, labels, S, N):
 
     # StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
     for i in range(N):
+        print "iterator %d" % i
+    
         sample_weight = (numpy.hstack((wd, ws))
                          / float(numpy.sum(ws) + numpy.sum(wd)))
-        best_clf_model = gridSearchCV(numpy.vstack((Td, Ts)),
-                                      numpy.hstack((labeld, labels)),
-                                      param_grid=param_grid,
-                                      sample_weight=sample_weight)
+
+        # find a best model for each iterator or stick to a preset model
+        if preset_model is None:
+            best_clf_model = gridSearchCV(numpy.vstack((Td, Ts)),
+                                          numpy.hstack((labeld, labels)),
+                                          param_grid=param_grid,
+                                          sample_weight=sample_weight)
+        else:
+            best_clf_model = preset_model
 
         hs = best_clf_model.predict(Ts)
         hd = best_clf_model.predict(Td)
@@ -95,7 +105,7 @@ def trAdaboost(Td, Ts, labeld, labels, S, N):
 
         # TODO: error_t suppost to be less than 1/2
         error_t = numpy.dot(numpy.abs(hs - labels), ws) / numpy.sum(ws)
-        print "The overall error_t is %f" % error_t
+        print "The iterator error_t is %f" % error_t
 
         beta_t[0, i] = error_t / (1 - error_t)
         beta = 1. / (1 + math.sqrt(2. * math.log(float(n)/N)))
