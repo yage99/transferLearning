@@ -8,11 +8,12 @@ from getopt import getopt
 import subprocess
 import numpy
 from trAdaboost import trAdaboost
-from trAdaboost import gridSearchCV
+from trAdaboost import cross_validation
 from sklearn.model_selection import KFold
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn import preprocessing
 from sklearn import metrics
+from sklearn.model_selection import GridSearchCV
 
 
 def loadExpression(data):
@@ -26,7 +27,7 @@ def loadExpression(data):
     mat = scipy.io.loadmat('../data/express/matlab.mat')
 
     # filter not known label
-    print mat['S1'][:, 3]
+    # useless, should be removed in the future
     filter = numpy.logical_not(mat['S1'][:, 3] == '[]')
     data['express'] = mat['exp_matrix'][filter]
     data['label'] = numpy.logical_or(
@@ -97,6 +98,8 @@ def test():
     target_drug = "Carboplatin"
     feature_num = 500
     disease = None
+    profile_uid = ('%s_%s_%s_%d' %
+                   (source_drug, target_drug, disease, feature_num))
 
     data = {}
     if os.environ['debug']:
@@ -127,13 +130,14 @@ def test():
     # do feature selction by mrmr
     if os.environ['debug']:
         print "selecting feature: %d" % feature_num
-    feature_file_name = ('~feature_%s_%s_%s_%d.txt'
-                         % (source_drug, target_drug, disease, feature_num))
+    feature_file_name = ('~feature_%s.txt' % profile_uid)
     if(os.path.isfile(feature_file_name)):
-        print "Feature file found, use existing features"
+        print ("Feature file %s found, use existing features" %
+               feature_file_name)
         feature_indc = numpy.loadtxt(feature_file_name).astype('int')
     else:
-        print "Feature file not found, feature selection by mrmr"
+        print ("Feature file %s not found, feature selection by mrmr" %
+               feature_file_name)
         numpy.savetxt("~temp.csv", numpy.ceil(source_express*100),
                       fmt="%.3f", delimiter=',')
         output = subprocess.check_output(["mrmr_c_src/mrmr", "-i", "~temp.csv",
@@ -157,31 +161,46 @@ def test():
 
     source_label = numpy.zeros(source_data['label'].shape)
     source_label[source_data['label']] = 1
+    #source_label = source_label * 2 - 1
     target_label = numpy.zeros(target_data['label'].shape)
     target_label[target_data['label']] = 1
+    #target_label = target_label * 2 - 1
 
     kf = KFold(n_splits=10)
     predict = numpy.zeros(target_label.shape)
 
-    C_range = 2. ** numpy.arange(-5, 15)
-    gamma_range = 2. ** numpy.arange(-20, -5)
-    param_grid = dict(gamma=gamma_range, C=C_range)
+    #C_range = 2. ** numpy.arange(-5, 15)
+    #gamma_range = 2. ** numpy.arange(-20, -5)
+    #param_grid = dict(gamma=gamma_range, C=C_range)
     # cv = KFold(n_splits=10)
     # StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42)
 
-    best_clf = gridSearchCV(source_express, source_label,
-                            param_grid=param_grid)
+    #best_clf = gridSearchCV(source_express, source_label,
+    #                        param_grid=param_grid)
+    
     #return
-    previous_clf = gridSearchCV(target_express,
-                                target_label, param_grid=param_grid)
+    #previous_clf = gridSearchCV(target_express,
+    #                            target_label, param_grid=param_grid)
+    
+    cv_predict = cross_validation(target_express, target_label)
+    cv_auc = metrics.roc_auc_score(target_label, cv_predict)
+    print "previous best AUC is %f" % cv_auc
+
+    split_count = 0
     for train, test in kf.split(target_label):
-        print "training one split"
+        print "training split %d" % split_count
+
         predict[test] = trAdaboost(source_express, target_express[train],
                                    source_label, target_label[train],
-                                   target_express[test], 2)
+                                   target_express[test], 20)
+        split_count += 1
 
     print ("The improved trAdaboost AUC is %f"
            % metrics.roc_auc_score(target_label, predict))
+
+    numpy.savetxt(('predict_%s.csv' % profile_uid),
+                  numpy.hstack((target_label, predict, cv_predict)),
+                  delimiter=',')
 
 
 if __name__ == "__main__":
