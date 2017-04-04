@@ -148,8 +148,17 @@ def trAdaboost(Td, Ts, labeld, labels, S, N, preset_model=None):
     n = Td.shape[0]
 
     # init weight vector
-    wd = numpy.ones([Td.shape[0], ])
+    # balance positive and negative instances
+    diff_positive_num = sum(labeld)
+    diff_negative_num = labeld.shape[0] - diff_positive_num
+    same_positive_num = sum(labels)
+    same_negative_num = labels.shape[0] - same_positive_num
+    wd = numpy.zeros([Td.shape[0], ])
+    wd[labeld == 1] = 1.0 / diff_positive_num
+    wd[labeld == 0] = 1.0 / diff_negative_num
     ws = numpy.ones([Ts.shape[0], ])
+    ws[labels == 1] = 1.0 / same_positive_num
+    ws[labels == 0] = 1.0 / same_negative_num
     ht = numpy.zeros([N, S.shape[0]])
 
     beta = 0
@@ -199,19 +208,19 @@ def trAdaboost(Td, Ts, labeld, labels, S, N, preset_model=None):
     for i in range(S.shape[0]):
         # production of this powers
         posibity[i] = numpy.prod(beta_t[0, int(math.ceil(N / 2)):] **
-                              -ht[int(math.ceil(N / 2)):, i])
-        print posibity[i]
+                                 -ht[int(math.ceil(N / 2)):, i].T)
+        #print posibity[i]
 
         if(posibity[i] > base):
             hf[0, i] = 1
         else:
             hf[0, i] = 0
 
-    return posibity - base
+    return posibity / base
 
 def printProgressBar(iteration, total,
                      prefix = '', suffix = '',
-                     decimals = 1, length = 20, fill = '#'):
+                     decimals = 1, length = 50, fill = '#'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -228,7 +237,7 @@ def printProgressBar(iteration, total,
                                                      float(total))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    sys.stdout.write('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
+    sys.stdout.write('\r%s |%s| %s%% %s\r' % (prefix, bar, percent, suffix))
     sys.stdout.flush()
     # Print New Line on Complet
     # if iteration == total:
